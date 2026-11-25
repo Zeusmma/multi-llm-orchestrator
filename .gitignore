@@ -1,0 +1,11 @@
+data/
+*.db
+*.log
+.env
+venv/
+__pycache__/
+logs/
+usage/
+deepseek-logs/
+out/
+work/

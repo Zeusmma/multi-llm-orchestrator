@@ -1,0 +1,32 @@
+name: test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Syntax check
+        run: |
+          for f in orchestrate.sh lane.sh router.sh; do zsh -n "$f"; done
+          sh -n examples/openai-compatible-runner.sh
+          bash -n scripts/setup.sh
+      - name: Route plan on test tasks
+        run: |
+          export ORCH_USAGE_DIR="$RUNNER_TEMP/usage"
+          ./orchestrate.sh list
+          ./orchestrate.sh route-plan test-tasks
+      - name: Dry run
+        run: |
+          mkdir work
+          export ORCH_USAGE_DIR="$RUNNER_TEMP/usage"
+          ./orchestrate.sh --dry-run run test-tasks out --mode route --tier light --workdir work
+      - name: End-to-end with mock runner
+        run: |
+          mkdir work-e2e; cp -r test-tasks e2e-tasks
+          rm e2e-tasks/t3.txt   # t3 pins the antigravity backend, which CI does not have
+          ./orchestrate.sh disable antigravity
+          export ORCH_USAGE_DIR="$RUNNER_TEMP/usage" LLM_MOCK=1
+          ./orchestrate.sh run e2e-tasks e2e-out --mode route --tier light --workdir work-e2e
+          grep -q "Tasks: \*\*2\*\*, succeeded: \*\*2\*\*" e2e-out/report.md

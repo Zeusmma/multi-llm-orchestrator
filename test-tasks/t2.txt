@@ -1,0 +1,2 @@
+#tier: strong
+Answer in one word: what is the capital of France?
